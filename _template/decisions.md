@@ -1,0 +1,9 @@
+# Decisions
+
+Newest first. Keep each entry short.
+
+## YYYY-MM-DD — Title
+
+**Decision:** …  
+**Why:** …  
+**Alternatives considered:** …
