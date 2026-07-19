@@ -14,18 +14,53 @@ A Laravel 13 + Filament 5 admin application scaffolded for quick CRUD developmen
 - Composer 2
 - Node.js 20+ / npm (for Vite assets)
 
-## Setup
+## Quick start (one command)
+
+The fastest way to recreate the demo on a fresh machine is the installer script. It
+installs dependencies, prepares `.env` + the SQLite database, seeds the
+proof-of-concept (POC) demo data, and processes the due demo events through the queue:
+
+```bash
+./scripts/install.sh
+```
+
+Options:
+
+| Flag | Effect |
+|------|--------|
+| _(none)_ | Full POC install — **resets** the database and seeds demo data |
+| `--no-reset` | Install without wiping existing data (idempotent re-seed) |
+| `--no-process` | Skip processing the due demo events |
+| `--help` | Show usage |
+
+When it finishes, start the app with `composer dev` and log in at
+`http://localhost:8000/admin` using the seeded credentials below.
+
+## Manual setup
+
+If you prefer to set things up by hand:
 
 ```bash
 composer install
 npm install
 cp .env.example .env      # if .env is missing
 php artisan key:generate  # if APP_KEY is missing
-php artisan migrate
-php artisan make:filament-user   # create an admin login
+php artisan migrate        # or: php artisan migrate:fresh --seed
+php artisan db:seed        # seeds the POC demo data (admin user + sample events)
 ```
 
-The app uses SQLite (`database/database.sqlite`) and the `database` queue driver by default — no external services required.
+The app uses SQLite (`database/database.sqlite`) and the `database` queue driver by
+default — no external services required.
+
+### POC demo data & default login
+
+`php artisan db:seed` (via `Database\Seeders\PocSeeder`) is idempotent and creates:
+
+- A default admin login — **`admin@example.com` / `password`**
+- Three sample events: two already due (processed to `completed`) and one scheduled
+  for tomorrow (stays `pending`)
+
+To create additional admin logins manually: `php artisan make:filament-user`.
 
 ## Running (development)
 

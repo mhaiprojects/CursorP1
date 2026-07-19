@@ -11,6 +11,11 @@ This is a Laravel 13 + Filament 5 application. See `README.md` for a full featur
 - To run pieces individually for debugging: `php artisan serve --host=0.0.0.0 --port=8000`, `php artisan queue:work`, `php artisan schedule:work`, `npm run dev`.
 - The Filament admin panel lives at `/admin`. Create a login with `php artisan make:filament-user`. A dev user `admin@example.com` / `password` is created during setup, but the SQLite DB is git-ignored, so recreate the user on a fresh checkout with `php artisan migrate` + `php artisan make:filament-user`.
 
+### Recreating the demo
+
+- `./scripts/install.sh` recreates the whole POC demo from scratch (deps, `.env`, SQLite DB, seed, and it processes due events through the queue). Default run **resets the DB** (`migrate:fresh --seed`); pass `--no-reset` to keep existing data. It is safe to re-run.
+- POC seed data lives in `Database\Seeders\PocSeeder` (wired into `DatabaseSeeder`) and is idempotent (`updateOrCreate`/`firstOrCreate`). It creates the `admin@example.com` / `password` login plus sample events.
+
 ### Non-obvious gotchas
 
 - The scheduled-event demo flow requires BOTH the scheduler and a queue worker running: `events:dispatch-due` only *queues* `ProcessEvent` jobs; a `queue:work`/`queue:listen` worker must be running for events to actually reach `completed`. `php artisan serve` alone does NOT process the queue.
