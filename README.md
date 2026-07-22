@@ -25,7 +25,9 @@ Hybrid AI task pipeline: **Cursor Cloud Agents** for code and repo work, **LM St
 
 | Path | Purpose |
 |------|---------|
+| `docs/README.md` | Documentation index |
 | `docs/lm-studio-cursor-delegation-plan.md` | Architecture and setup guide |
+| `docs/discussions-report.md` | Full discussion and implementation report |
 | `tasks/queue.json` | Master task queue |
 | `tasks/backlog.md` | Human-friendly task intake |
 | `scripts/worker-local.py` | LM Studio task runner |
