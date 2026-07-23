@@ -8,6 +8,14 @@ A Laravel 13 + Filament 5 admin application scaffolded for quick CRUD developmen
 - **Task queue** — a queued `ProcessEvent` job that processes due events.
 - **Scheduler** — the `events:dispatch-due` command runs every minute (via the Laravel scheduler) to queue jobs for due events.
 
+It also integrates with the **Cursor CLI** to run automated agent tasks:
+
+- **Cursor integration** — a driver-based service (`App\Services\Cursor`) that shells out to the real `cursor-agent` CLI, with an offline `fake` driver for dev/CI.
+- **Task management & scheduling** — a `Task` model + Filament resource; the `tasks:dispatch-due` scheduled command queues a `ProcessTask` job that runs each task's prompt through the Cursor agent.
+- **Cursor Console** — a front-end page at `/console` to manage/schedule tasks and a chat window that talks to the Cursor agent.
+
+See [Cursor CLI integration](#cursor-cli-integration) below.
+
 ## Requirements
 
 - PHP 8.3+ with the usual Laravel extensions (`mbstring`, `xml`, `curl`, `zip`, `sqlite3`, `bcmath`, `intl`, ...)
@@ -87,9 +95,73 @@ Then log in at `http://localhost:8000/admin`.
 2. The scheduler runs `events:dispatch-due` every minute (or run it manually), which queues a `ProcessEvent` job and writes a "Queued" `EventLog`.
 3. The queue worker runs the job, marks the event `completed`, and writes a "Processed" `EventLog`.
 
+## Cursor CLI integration
+
+The app can drive the [Cursor CLI](https://cursor.com/cli) (`cursor-agent`) to action
+queued tasks and power the chat window. It never calls the binary directly — everything
+goes through the `App\Services\Cursor\Contracts\CursorAgent` contract, which has two drivers
+(selected by `CURSOR_DRIVER`, see `config/cursor.php`):
+
+| Driver | When to use | Requirements |
+|--------|-------------|--------------|
+| `fake` (default) | Local dev, CI, automated tests | None — returns deterministic simulated responses |
+| `cli` | Real Cursor agent | `cursor-agent` binary on `PATH` + a `CURSOR_API_KEY` |
+
+Enable the real CLI by installing the binary (`curl https://cursor.com/install | bash`)
+and setting in `.env`:
+
+```env
+CURSOR_DRIVER=cli
+CURSOR_API_KEY=your-cursor-api-key
+# optional:
+CURSOR_AGENT_BIN=/home/you/.local/bin/cursor-agent
+CURSOR_MODEL=gpt-5
+```
+
+Try it from the CLI:
+
+```bash
+php artisan cursor:run "Explain what this project does"
+```
+
+### Task management, scheduling & the queue
+
+- Create tasks in the **Cursor Console** (`/console`) or the Filament admin (`/admin/tasks`).
+- A task has a `prompt`, an optional `scheduled_at`, and a status
+  (`pending → queued → running → completed|failed`).
+- The scheduler runs `tasks:dispatch-due` every minute; it queues a `ProcessTask` job for
+  each due task. A running queue worker executes the job, which calls the Cursor agent and
+  stores the output on the task. "Run now" queues a task immediately.
+
+### The Cursor Console front-end
+
+Visit `http://localhost:8000/console` for a single page with:
+
+- a **Tasks** panel to create/schedule/run/delete Cursor tasks and watch their status/output, and
+- a **Chat** window that sends messages to the Cursor agent and shows the replies.
+
+## Running with DDEV
+
+This project ships a [DDEV](https://ddev.com) config (`.ddev/config.yaml`) that uses SQLite
+(the bundled database container is omitted) and runs the queue worker + scheduler as
+`web_extra_daemons`:
+
+```bash
+ddev start          # boots the container and runs composer/npm install, migrate --seed, build
+ddev launch /console
+```
+
+`ddev start` runs the setup hooks automatically. To use the real Cursor CLI inside DDEV, set
+`CURSOR_DRIVER=cli` and add `CURSOR_API_KEY` to `web_environment` (or `ddev config global`).
+
 ## Testing & linting
 
 ```bash
 php artisan test        # PHPUnit tests
 ./vendor/bin/pint       # code style (add --test to check only)
+./scripts/verify.sh     # lint + tests + live smoke tests of the Cursor features
 ```
+
+`scripts/verify.sh` is the repeatable check for the Cursor integration features — it runs
+Pint, the relevant test suites, and live smoke tests of `cursor:run` and the
+schedule/queue wiring (using the `fake` driver, so no API key is needed).
