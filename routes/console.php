@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Every minute, queue processing jobs for any events that are now due.
 Schedule::command('events:dispatch-due')->everyMinute();
+
+// Every minute, queue Cursor-agent jobs for any tasks that are now due.
+Schedule::command('tasks:dispatch-due')->everyMinute();

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Event;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -53,6 +54,33 @@ class PocSeeder extends Seeder
                     'description' => $event['description'],
                     'scheduled_at' => $event['scheduled_at'],
                     'status' => 'pending',
+                ],
+            );
+        }
+
+        $tasks = [
+            [
+                'name' => 'Summarise open TODOs',
+                'prompt' => 'Scan the codebase and summarise all TODO comments.',
+                'mode' => 'ask',
+                'scheduled_at' => null,
+            ],
+            [
+                'name' => 'Draft release notes',
+                'prompt' => 'Draft release notes from the latest git log.',
+                'mode' => 'ask',
+                'scheduled_at' => now()->addHour(),
+            ],
+        ];
+
+        foreach ($tasks as $task) {
+            Task::firstOrCreate(
+                ['name' => $task['name']],
+                [
+                    'prompt' => $task['prompt'],
+                    'mode' => $task['mode'],
+                    'scheduled_at' => $task['scheduled_at'],
+                    'status' => Task::STATUS_PENDING,
                 ],
             );
         }
