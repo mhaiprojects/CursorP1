@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Task;
+use App\Models\TaskRun;
 use App\Services\Cursor\Contracts\CursorAgent;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -41,6 +42,11 @@ class ProcessTask implements ShouldQueue
             return;
         }
 
+        $run = $task->runs()->create([
+            'status' => TaskRun::STATUS_RUNNING,
+            'started_at' => now(),
+        ]);
+
         $task->update([
             'status' => Task::STATUS_RUNNING,
             'started_at' => now(),
@@ -54,8 +60,20 @@ class ProcessTask implements ShouldQueue
             'force' => $task->force,
         ], fn ($value) => $value !== null && $value !== false));
 
+        $run->update([
+            'status' => $result->ok ? TaskRun::STATUS_COMPLETED : TaskRun::STATUS_FAILED,
+            'output' => $result->output,
+            'exit_code' => $result->exitCode,
+            'error' => $result->ok ? null : $result->error,
+            'finished_at' => now(),
+        ]);
+
+        // Recurring tasks return to "pending" so they can run again on schedule;
+        // one-off tasks settle into a terminal status.
         $task->update([
-            'status' => $result->ok ? Task::STATUS_COMPLETED : Task::STATUS_FAILED,
+            'status' => $task->isRecurring()
+                ? Task::STATUS_PENDING
+                : ($result->ok ? Task::STATUS_COMPLETED : Task::STATUS_FAILED),
             'output' => $result->output,
             'exit_code' => $result->exitCode,
             'error' => $result->ok ? null : $result->error,
@@ -70,11 +88,25 @@ class ProcessTask implements ShouldQueue
     {
         $task = Task::find($this->taskId);
 
-        if ($task && ! $task->isTerminal()) {
+        if (! $task) {
+            return;
+        }
+
+        $message = $exception?->getMessage() ?? 'The task failed to process.';
+
+        $task->runs()
+            ->where('status', TaskRun::STATUS_RUNNING)
+            ->update([
+                'status' => TaskRun::STATUS_FAILED,
+                'error' => $message,
+                'finished_at' => now(),
+            ]);
+
+        if (! $task->isTerminal()) {
             $task->update([
                 'status' => Task::STATUS_FAILED,
                 'finished_at' => now(),
-                'error' => $exception?->getMessage() ?? 'The task failed to process.',
+                'error' => $message,
             ]);
         }
     }

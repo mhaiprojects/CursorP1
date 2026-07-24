@@ -46,6 +46,11 @@
                         <input type="datetime-local" x-model="form.scheduled_at"
                                class="rounded-md bg-gray-800 border border-gray-700 px-2 py-1 text-sm" />
                     </label>
+                    <label class="text-xs text-gray-400 flex items-center gap-1">
+                        cron
+                        <input type="text" x-model="form.cron_expression" placeholder="*/5 * * * *"
+                               class="w-28 rounded-md bg-gray-800 border border-gray-700 px-2 py-1 text-sm" />
+                    </label>
                     <div class="ml-auto flex gap-2">
                         <button type="submit" name="run_now"
                                 class="rounded-md bg-indigo-600 hover:bg-indigo-500 px-3 py-2 text-sm font-medium">
@@ -67,13 +72,21 @@
                                 <p class="font-medium truncate" x-text="task.name"></p>
                                 <p class="text-xs text-gray-500 truncate" x-text="task.prompt"></p>
                             </div>
-                            <span class="shrink-0 text-xs px-2 py-1 rounded-full"
-                                  :class="statusClass(task.status)" x-text="task.status"></span>
+                            <div class="shrink-0 flex items-center gap-1">
+                                <span class="text-xs px-2 py-1 rounded-full bg-purple-900 text-purple-200"
+                                      x-show="task.cron_expression" x-text="'⟳ ' + task.cron_expression"></span>
+                                <span class="text-xs px-2 py-1 rounded-full"
+                                      :class="statusClass(task.status)" x-text="task.status"></span>
+                            </div>
                         </div>
                         <div class="mt-2 flex items-center gap-3 text-xs">
                             <button @click="runTask(task.id)" class="text-indigo-400 hover:underline"
                                     x-show="!['queued','running'].includes(task.status)">Run now</button>
+                            <button @click="cancelTask(task.id)" class="text-amber-400 hover:underline"
+                                    x-show="['pending','queued'].includes(task.status)">Cancel</button>
                             <button @click="deleteTask(task.id)" class="text-red-400 hover:underline">Delete</button>
+                            <span class="text-gray-600" x-show="task.runs_count > 0"
+                                  x-text="task.runs_count + ' run(s)'"></span>
                             <span class="text-gray-600" x-show="task.scheduled_at"
                                   x-text="'scheduled: ' + task.scheduled_at"></span>
                         </div>
@@ -135,7 +148,7 @@
             driver: @json($driver),
             sending: false,
             chatInput: '',
-            form: { name: '', prompt: '', mode: 'ask', scheduled_at: '' },
+            form: { name: '', prompt: '', mode: 'ask', scheduled_at: '', cron_expression: '' },
 
             init() {
                 this.refresh();
@@ -171,12 +184,17 @@
                     method: 'POST',
                     body: JSON.stringify({ ...this.form, run_now: runNow }),
                 });
-                this.form = { name: '', prompt: '', mode: 'ask', scheduled_at: '' };
+                this.form = { name: '', prompt: '', mode: 'ask', scheduled_at: '', cron_expression: '' };
                 this.refresh();
             },
 
             async runTask(id) {
                 await this.api(`/console/tasks/${id}/run`, { method: 'POST' });
+                this.refresh();
+            },
+
+            async cancelTask(id) {
+                await this.api(`/console/tasks/${id}/cancel`, { method: 'POST' });
                 this.refresh();
             },
 
@@ -216,6 +234,7 @@
                     running: 'bg-blue-800 text-blue-200',
                     completed: 'bg-emerald-800 text-emerald-200',
                     failed: 'bg-red-800 text-red-200',
+                    cancelled: 'bg-gray-600 text-gray-200',
                 }[status] || 'bg-gray-700 text-gray-300';
             },
         };

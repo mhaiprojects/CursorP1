@@ -10,24 +10,40 @@ class DispatchDueTasks extends Command
 {
     protected $signature = 'tasks:dispatch-due';
 
-    protected $description = 'Queue a Cursor-agent processing job for every due, pending task';
+    protected $description = 'Queue a Cursor-agent processing job for every due task (one-off + recurring)';
 
     public function handle(): int
     {
-        $due = Task::query()->due()->get();
+        $count = 0;
 
-        if ($due->isEmpty()) {
+        // One-off tasks that are due.
+        foreach (Task::query()->due()->get() as $task) {
+            $task->update(['status' => Task::STATUS_QUEUED]);
+            ProcessTask::dispatch($task->id);
+            $count++;
+        }
+
+        // Recurring (cron) tasks whose schedule is due right now.
+        foreach (Task::query()->recurring()->get() as $task) {
+            if (! $task->isCronDue()) {
+                continue;
+            }
+
+            $task->update([
+                'status' => Task::STATUS_QUEUED,
+                'last_run_at' => now(),
+            ]);
+            ProcessTask::dispatch($task->id);
+            $count++;
+        }
+
+        if ($count === 0) {
             $this->info('No due tasks to dispatch.');
 
             return self::SUCCESS;
         }
 
-        foreach ($due as $task) {
-            $task->update(['status' => Task::STATUS_QUEUED]);
-            ProcessTask::dispatch($task->id);
-        }
-
-        $this->info("Dispatched {$due->count()} task(s).");
+        $this->info("Dispatched {$count} task(s).");
 
         return self::SUCCESS;
     }

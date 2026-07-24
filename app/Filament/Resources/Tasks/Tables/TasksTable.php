@@ -32,9 +32,19 @@ class TasksTable
                         Task::STATUS_FAILED => 'danger',
                         Task::STATUS_RUNNING => 'info',
                         Task::STATUS_QUEUED => 'warning',
+                        Task::STATUS_CANCELLED => 'gray',
                         default => 'gray',
                     })
                     ->searchable(),
+                TextColumn::make('cron_expression')
+                    ->label('Cron')
+                    ->placeholder('—')
+                    ->badge()
+                    ->color('gray'),
+                TextColumn::make('runs_count')
+                    ->label('Runs')
+                    ->counts('runs')
+                    ->sortable(),
                 TextColumn::make('scheduled_at')
                     ->dateTime()
                     ->sortable(),
@@ -69,6 +79,15 @@ class TasksTable
                         $record->update(['status' => Task::STATUS_QUEUED]);
                         ProcessTask::dispatch($record->id);
                         Notification::make()->title('Task queued for the Cursor agent')->success()->send();
+                    }),
+                Action::make('cancel')
+                    ->label('Cancel')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('warning')
+                    ->visible(fn (Task $record): bool => $record->canBeCancelled())
+                    ->action(function (Task $record): void {
+                        $record->update(['status' => Task::STATUS_CANCELLED, 'finished_at' => now()]);
+                        Notification::make()->title('Task cancelled')->warning()->send();
                     }),
                 EditAction::make(),
             ])

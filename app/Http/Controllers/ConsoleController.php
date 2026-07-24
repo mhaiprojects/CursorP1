@@ -6,6 +6,7 @@ use App\Jobs\ProcessTask;
 use App\Models\ChatMessage;
 use App\Models\Task;
 use App\Services\Cursor\Contracts\CursorAgent;
+use Cron\CronExpression;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -39,6 +40,7 @@ class ConsoleController extends Controller
         return response()->json([
             'tasks' => Task::query()
                 ->where('user_id', $request->user()->id)
+                ->withCount('runs')
                 ->latest()
                 ->limit(50)
                 ->get(),
@@ -60,6 +62,11 @@ class ConsoleController extends Controller
             'mode' => ['nullable', 'in:ask,plan,agent'],
             'force' => ['sometimes', 'boolean'],
             'scheduled_at' => ['nullable', 'date'],
+            'cron_expression' => ['nullable', 'string', 'max:255', function (string $attribute, mixed $value, \Closure $fail) {
+                if (! CronExpression::isValidExpression($value)) {
+                    $fail('The :attribute is not a valid cron expression.');
+                }
+            }],
             'run_now' => ['sometimes', 'boolean'],
         ]);
 
@@ -71,6 +78,7 @@ class ConsoleController extends Controller
             'mode' => ($data['mode'] ?? null) === 'agent' ? null : ($data['mode'] ?? null),
             'force' => (bool) ($data['force'] ?? false),
             'scheduled_at' => $data['scheduled_at'] ?? null,
+            'cron_expression' => $data['cron_expression'] ?? null,
             'status' => Task::STATUS_PENDING,
         ]);
 
@@ -90,6 +98,19 @@ class ConsoleController extends Controller
         }
 
         $this->dispatchTask($task);
+
+        return response()->json(['task' => $task->fresh()]);
+    }
+
+    public function cancelTask(Request $request, Task $task): JsonResponse
+    {
+        $this->authorizeTask($request, $task);
+
+        if (! $task->canBeCancelled()) {
+            return response()->json(['task' => $task, 'message' => 'Only pending or queued tasks can be cancelled.'], 422);
+        }
+
+        $task->update(['status' => Task::STATUS_CANCELLED, 'finished_at' => now()]);
 
         return response()->json(['task' => $task->fresh()]);
     }
