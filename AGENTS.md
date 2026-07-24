@@ -17,6 +17,10 @@ This is a Laravel 13 + Filament 5 application. See `README.md` for a full featur
 - The app talks to the Cursor CLI through `App\Services\Cursor\Contracts\CursorAgent`, bound in `CursorServiceProvider` based on `config('cursor.driver')` (`CURSOR_DRIVER`). Default is `fake` (offline, deterministic) so everything runs and tests pass with NO API key. Tests force `CURSOR_DRIVER=fake` via `phpunit.xml`.
 - For the real agent set `CURSOR_DRIVER=cli` + `CURSOR_API_KEY`; the `cursor-agent` binary must be installed and on `PATH` (or set `CURSOR_AGENT_BIN`). Without a key the CLI prints `Error: Authentication required` and the driver surfaces it as a failed result.
 - Scheduled Cursor tasks need the SAME scheduler + queue worker as events: `tasks:dispatch-due` only queues `ProcessTask` jobs.
+- The `/console` page and its endpoints require authentication (guests are redirected to `/admin/login` via `redirectGuestsTo` in `bootstrap/app.php`, using the shared `web` guard) and are scoped per-user. Tasks/chat carry a nullable `user_id`; console queries filter by `auth()->id()` and enforce ownership on run/cancel/delete.
+- Recurring tasks store a `cron_expression`; `ProcessTask` returns them to `pending` after each run (one-off tasks settle into a terminal status). Every execution is recorded in `task_runs` (the `TaskRun` model / `Task::runs()`).
+- The `runs()` relation is ordered by `id` desc (NOT `created_at`) because same-second `created_at` values tie non-deterministically in tests.
+- Full branch context for humans/AIs: see `docs/BRANCH_REPORT.md`.
 
 ### Recreating the demo
 

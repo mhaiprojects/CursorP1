@@ -137,8 +137,24 @@ php artisan cursor:run "Explain what this project does"
 
 Visit `http://localhost:8000/console` for a single page with:
 
-- a **Tasks** panel to create/schedule/run/delete Cursor tasks and watch their status/output, and
+- a **Tasks** panel to create/schedule/run/cancel/delete Cursor tasks and watch their status/output/run-count, and
 - a **Chat** window that sends messages to the Cursor agent and shows the replies.
+
+The console **requires authentication** (guests are redirected to the Filament login) and is
+scoped per-user — each user only sees and controls their own tasks and chat history.
+
+### Production hardening & advanced features
+
+- **Auth + per-user scoping** on the console and all its endpoints; ownership is enforced on run/cancel/delete.
+- **Rate limiting** (`throttle:cursor`, 30/min/user) on the console write endpoints.
+- **Reliable jobs** — `ProcessTask` has retries/backoff/timeout and a `failed()` handler that records the failure.
+- **Task run history** — every execution is recorded as a `TaskRun` (audit trail); the count shows in the UI.
+- **Recurring tasks** — set a cron expression (e.g. `*/5 * * * *`); `tasks:dispatch-due` re-queues them on schedule and they return to `pending` after each run.
+- **Cancel** pending/queued tasks from the console or the Filament table.
+- **Dashboard widget** — a Filament stats overview (tasks / runs / messages) on `/admin`.
+- **CI** — `.github/workflows/ci.yml` runs Pint + the test suite on push/PR.
+
+A full breakdown of everything on this branch is in [`docs/BRANCH_REPORT.md`](docs/BRANCH_REPORT.md).
 
 ## Running with DDEV
 
