@@ -15,9 +15,15 @@ use Illuminate\View\View;
 /**
  * Backend for the Cursor Console front-end page: manage/schedule Cursor tasks
  * and chat with the Cursor CLI agent.
+ *
+ * Every action is scoped to the authenticated user, so users only ever see and
+ * control their own tasks and chat history.
  */
 class ConsoleController extends Controller
 {
+    /** Max characters allowed in a task prompt / chat message. */
+    private const MAX_PROMPT = 8000;
+
     public function index(): View
     {
         return view('console', [
@@ -28,12 +34,16 @@ class ConsoleController extends Controller
     /**
      * Current state (tasks + chat messages) used for polling the UI.
      */
-    public function state(): JsonResponse
+    public function state(Request $request): JsonResponse
     {
         return response()->json([
-            'tasks' => Task::query()->latest()->limit(50)->get(),
+            'tasks' => Task::query()
+                ->where('user_id', $request->user()->id)
+                ->latest()
+                ->limit(50)
+                ->get(),
             'messages' => ChatMessage::query()
-                ->where('conversation', 'default')
+                ->where('user_id', $request->user()->id)
                 ->orderBy('id')
                 ->limit(200)
                 ->get(),
@@ -45,8 +55,8 @@ class ConsoleController extends Controller
     {
         $data = $this->validateJson($request, [
             'name' => ['required', 'string', 'max:255'],
-            'prompt' => ['required', 'string'],
-            'description' => ['nullable', 'string'],
+            'prompt' => ['required', 'string', 'max:'.self::MAX_PROMPT],
+            'description' => ['nullable', 'string', 'max:2000'],
             'mode' => ['nullable', 'in:ask,plan,agent'],
             'force' => ['sometimes', 'boolean'],
             'scheduled_at' => ['nullable', 'date'],
@@ -54,6 +64,7 @@ class ConsoleController extends Controller
         ]);
 
         $task = Task::create([
+            'user_id' => $request->user()->id,
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'prompt' => $data['prompt'],
@@ -70,9 +81,11 @@ class ConsoleController extends Controller
         return response()->json(['task' => $task->fresh()], 201);
     }
 
-    public function runTask(Task $task): JsonResponse
+    public function runTask(Request $request, Task $task): JsonResponse
     {
-        if ($task->status === Task::STATUS_RUNNING || $task->status === Task::STATUS_QUEUED) {
+        $this->authorizeTask($request, $task);
+
+        if (in_array($task->status, [Task::STATUS_RUNNING, Task::STATUS_QUEUED], true)) {
             return response()->json(['task' => $task, 'message' => 'Task is already running.'], 422);
         }
 
@@ -81,8 +94,10 @@ class ConsoleController extends Controller
         return response()->json(['task' => $task->fresh()]);
     }
 
-    public function destroyTask(Task $task): JsonResponse
+    public function destroyTask(Request $request, Task $task): JsonResponse
     {
+        $this->authorizeTask($request, $task);
+
         $task->delete();
 
         return response()->json(['deleted' => true]);
@@ -94,11 +109,14 @@ class ConsoleController extends Controller
     public function chat(Request $request, CursorAgent $agent): JsonResponse
     {
         $data = $this->validateJson($request, [
-            'message' => ['required', 'string'],
+            'message' => ['required', 'string', 'max:'.self::MAX_PROMPT],
         ]);
 
+        $conversation = $this->conversationKey($request);
+
         $userMessage = ChatMessage::create([
-            'conversation' => 'default',
+            'user_id' => $request->user()->id,
+            'conversation' => $conversation,
             'role' => ChatMessage::ROLE_USER,
             'content' => $data['message'],
         ]);
@@ -106,7 +124,8 @@ class ConsoleController extends Controller
         $result = $agent->run($data['message'], ['mode' => 'ask']);
 
         $assistantMessage = ChatMessage::create([
-            'conversation' => 'default',
+            'user_id' => $request->user()->id,
+            'conversation' => $conversation,
             'role' => ChatMessage::ROLE_ASSISTANT,
             'content' => $result->ok ? $result->output : ($result->error ?? 'The Cursor agent returned an error.'),
             'failed' => ! $result->ok,
@@ -119,9 +138,9 @@ class ConsoleController extends Controller
         ], 201);
     }
 
-    public function clearChat(): JsonResponse
+    public function clearChat(Request $request): JsonResponse
     {
-        ChatMessage::where('conversation', 'default')->delete();
+        ChatMessage::query()->where('user_id', $request->user()->id)->delete();
 
         return response()->json(['cleared' => true]);
     }
@@ -130,6 +149,16 @@ class ConsoleController extends Controller
     {
         $task->update(['status' => Task::STATUS_QUEUED]);
         ProcessTask::dispatch($task->id);
+    }
+
+    private function authorizeTask(Request $request, Task $task): void
+    {
+        abort_unless($task->user_id === $request->user()->id, 403);
+    }
+
+    private function conversationKey(Request $request): string
+    {
+        return 'user:'.$request->user()->id;
     }
 
     /**

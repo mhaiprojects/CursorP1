@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ChatMessage extends Model
 {
@@ -13,6 +14,7 @@ class ChatMessage extends Model
     public const ROLE_SYSTEM = 'system';
 
     protected $fillable = [
+        'user_id',
         'conversation',
         'role',
         'content',
@@ -24,4 +26,9 @@ class ChatMessage extends Model
         'failed' => 'boolean',
         'meta' => 'array',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

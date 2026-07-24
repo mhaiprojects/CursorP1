@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Task extends Model
 {
@@ -18,6 +19,7 @@ class Task extends Model
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
+        'user_id',
         'name',
         'description',
         'prompt',
@@ -54,5 +56,10 @@ class Task extends Model
     public function isTerminal(): bool
     {
         return in_array($this->status, [self::STATUS_COMPLETED, self::STATUS_FAILED], true);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

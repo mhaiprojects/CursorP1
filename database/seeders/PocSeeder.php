@@ -21,7 +21,7 @@ class PocSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
+        $admin = User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Admin',
@@ -77,6 +77,7 @@ class PocSeeder extends Seeder
             Task::firstOrCreate(
                 ['name' => $task['name']],
                 [
+                    'user_id' => $admin->id,
                     'prompt' => $task['prompt'],
                     'mode' => $task['mode'],
                     'scheduled_at' => $task['scheduled_at'],

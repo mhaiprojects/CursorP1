@@ -63,4 +63,35 @@ class ProcessTaskTest extends TestCase
 
         $this->assertSame('summarise the README', $agent->lastPrompt());
     }
+
+    public function test_a_thrown_agent_error_propagates_for_retry(): void
+    {
+        app(CursorAgent::class)->throwNext();
+
+        $task = Task::create([
+            'name' => 'Throwing task',
+            'prompt' => 'crash',
+            'status' => Task::STATUS_PENDING,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+
+        (new ProcessTask($task->id))->handle(app(CursorAgent::class));
+    }
+
+    public function test_failed_handler_marks_the_task_failed(): void
+    {
+        $task = Task::create([
+            'name' => 'Doomed',
+            'prompt' => 'x',
+            'status' => Task::STATUS_RUNNING,
+        ]);
+
+        (new ProcessTask($task->id))->failed(new \RuntimeException('queue gave up'));
+
+        $task->refresh();
+        $this->assertSame(Task::STATUS_FAILED, $task->status);
+        $this->assertSame('queue gave up', $task->error);
+        $this->assertNotNull($task->finished_at);
+    }
 }

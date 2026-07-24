@@ -3,6 +3,7 @@
 namespace App\Services\Cursor;
 
 use App\Services\Cursor\Contracts\CursorAgent;
+use RuntimeException;
 
 /**
  * Deterministic, offline implementation of the Cursor agent.
@@ -21,9 +22,15 @@ class FakeCursorAgent implements CursorAgent
 
     protected bool $shouldFail = false;
 
+    protected bool $shouldThrow = false;
+
     public function run(string $prompt, array $options = []): CursorResult
     {
         $this->calls[] = ['prompt' => $prompt, 'options' => $options];
+
+        if ($this->shouldThrow) {
+            throw new RuntimeException('Fake cursor agent exception');
+        }
 
         if (! empty($this->scripted)) {
             return array_shift($this->scripted);
@@ -59,6 +66,13 @@ class FakeCursorAgent implements CursorAgent
     public function failNext(): self
     {
         $this->shouldFail = true;
+
+        return $this;
+    }
+
+    public function throwNext(): self
+    {
+        $this->shouldThrow = true;
 
         return $this;
     }
