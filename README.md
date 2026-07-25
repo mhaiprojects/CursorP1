@@ -14,7 +14,7 @@ POE1Builds/     Budget build recommendations
 
 - [Path of Building overview](docs/path-of-building.md)
 - [Cloned repos](repos/README.md)
-- [Build recommendations](POE1Builds/README.md)
+- [Build recommendations](POE1Builds/README.md) — league starters + endgame 500M+ PoB builds
 
 ## Re-clone Tools
 
