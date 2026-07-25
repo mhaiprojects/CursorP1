@@ -28,4 +28,6 @@ Built by reading skill stats, unique mods, and scaling tags in `repos/path-of-bu
 | [RF of Arcane Devotion](08-righteous-fire-arcane-devotion-hierophant.md) | Templar → Hierophant | `RighteousFireAltX` | Mana-scaling fire DoT (4200%/min) |
 | [Lightning Strike of Arcing](09-lightning-strike-of-arcing-raider.md) | Ranger → Raider | `LightningStrikeAltX` | Chaining attack; +10% more per chain |
 
+> **Naming note:** *Arcing* is the official transfigured gem suffix (lightning arcs/chains between targets). It is not “blocked” and is unrelated to block chance.
+
 Import builds into [Path of Building Community](https://pathofbuilding.community). Enable shock, frenzy, and power charges in PoB config where noted to match published DPS figures.

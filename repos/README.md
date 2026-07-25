@@ -11,3 +11,4 @@ git clone --depth 1 <url> <folder>
 | `path-of-building/` | [PathOfBuildingCommunity/PathOfBuilding](https://github.com/PathOfBuildingCommunity/PathOfBuilding) | Offline build planner (Lua). See `docs/path-of-building.md`. |
 | `poe-ninja-client/` | [infernumx/poe_ninja_client](https://github.com/infernumx/poe_ninja_client) | Python client for poe.ninja economy API |
 | `poe-api-manager/` | [ayberkgezer/poe-api-manager](https://github.com/ayberkgezer/poe-api-manager) | TypeScript wrapper for poe.ninja and poe.watch |
+| `timeless-jewel-finder/` | [KeshHere/POE-Timeless-Jewel-Finder](https://github.com/KeshHere/POE-Timeless-Jewel-Finder) | Find optimal timeless jewel seeds (AutoIt + CSV data) |
