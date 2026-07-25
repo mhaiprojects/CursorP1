@@ -18,4 +18,14 @@ Budget-friendly Path of Exile 1 builds backed by community Path of Building data
 | [Animate Guardian of Smiting](05-animate-guardian-of-smiting.md) | Marauder → Guardian | ~50–120 div | ~514M | Minion boss melter, tanky |
 | [Detonate Dead Chain Reaction](06-detonate-dead-chain-reaction-necro.md) | Witch → Necromancer | ~40–150 div | ~399M → 900M+ | Delve / uber boss ramping DPS |
 
+## Data-Driven (from Path of Building game files)
+
+Built by reading skill stats, unique mods, and scaling tags in `repos/path-of-building/src/Data/` — no community PoB imports.
+
+| Build | Class | Skill (PoB variant ID) | Data source |
+|-------|-------|------------------------|-------------|
+| [Cold Snap of Power](07-cold-snap-of-power-elementalist.md) | Witch → Elementalist | `ColdSnapAltX` | Power-charge cold spell; 3s CD bypass |
+| [RF of Arcane Devotion](08-righteous-fire-arcane-devotion-hierophant.md) | Templar → Hierophant | `RighteousFireAltX` | Mana-scaling fire DoT (4200%/min) |
+| [Lightning Strike of Arcing](09-lightning-strike-of-arcing-raider.md) | Ranger → Raider | `LightningStrikeAltX` | Chaining attack; +10% more per chain |
+
 Import builds into [Path of Building Community](https://pathofbuilding.community). Enable shock, frenzy, and power charges in PoB config where noted to match published DPS figures.
