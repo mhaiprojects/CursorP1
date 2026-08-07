@@ -19,13 +19,15 @@ CursorP1/
 
 ## Projects
 
-| Project | Status | Folder |
-|---------|--------|--------|
-| _(none yet)_ | — | Copy `_template/` to add the first project |
+| Project | Status | Folder | Source branch |
+|---------|--------|--------|---------------|
+| LM Studio task delegation | Active | [lm-studio-task-delegation/](./lm-studio-task-delegation/) | `cursor/lm-studio-task-delegation-54dd` |
+| Laravel Filament CRUD | Active | [laravel-filament-crud/](./laravel-filament-crud/) | `cursor/setup-laravel-filament-crud-4bac` |
+| POE1 builds & tools | Active | [poe1/](./poe1/) | `cursor/poe1-f301` |
 
 ## How to add a project
 
 1. Copy `_template/` to a new folder named after the project (lowercase, hyphenated), e.g. `my-app/`.
 2. Fill in `README.md`, `overview.md`, and `plan.md`.
 3. Add a row to the **Projects** table above.
-4. Keep planning and docs here; keep application code in the project’s own repository.
+4. Keep planning and docs here; keep application code in the project’s own repository when it outgrows this hub.

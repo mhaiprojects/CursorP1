@@ -1,0 +1,36 @@
+name: cursorp1
+type: laravel
+docroot: public
+php_version: "8.3"
+webserver_type: nginx-fpm
+nodejs_version: "22"
+composer_version: "2"
+
+# This project uses SQLite (database/database.sqlite), so the bundled database
+# container is not needed.
+omit_containers: [db]
+
+web_environment:
+  # Default to the offline "fake" Cursor driver. Set CURSOR_DRIVER=cli and
+  # provide CURSOR_API_KEY (e.g. via `ddev config global` or web_environment)
+  # to talk to the real Cursor CLI.
+  - CURSOR_DRIVER=fake
+
+# Long-running processes so scheduled tasks/events flow through the queue.
+web_extra_daemons:
+  - name: queue-worker
+    command: "php artisan queue:work --tries=1 --sleep=1"
+    directory: /var/www/html
+  - name: scheduler
+    command: "php artisan schedule:work"
+    directory: /var/www/html
+
+hooks:
+  post-start:
+    - exec: composer install --no-interaction
+    - exec: "test -f .env || cp .env.example .env"
+    - exec: "grep -q '^APP_KEY=base64:' .env || php artisan key:generate"
+    - exec: "touch database/database.sqlite"
+    - exec: php artisan migrate --seed --force
+    - exec: npm install
+    - exec: npm run build
