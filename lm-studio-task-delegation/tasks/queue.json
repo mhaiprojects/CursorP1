@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "task-summarize-readme",
+      "title": "Summarize README",
+      "type": "summarize",
+      "tier": "local",
+      "status": "pending",
+      "input": {
+        "path": "README.md"
+      },
+      "output": {
+        "path": "tasks/output/task-summarize-readme.md"
+      },
+      "prompt": "Summarize this README in 5 bullet points. Include a one-line key takeaway at the top.",
+      "created_at": "2026-07-21T09:00:00Z"
+    },
+    {
+      "id": "task-format-delegation-plan",
+      "title": "Format delegation plan headings",
+      "type": "format-markdown",
+      "tier": "local",
+      "status": "pending",
+      "input": {
+        "path": "docs/lm-studio-cursor-delegation-plan.md"
+      },
+      "output": {
+        "path": "tasks/output/task-format-delegation-plan.md"
+      },
+      "created_at": "2026-07-21T09:01:00Z"
+    },
+    {
+      "id": "task-implement-router",
+      "title": "Add unit tests for task_router.py",
+      "type": "code",
+      "tier": "cloud",
+      "status": "pending",
+      "input": {
+        "paths": ["scripts/task_router.py"]
+      },
+      "prompt": "Add pytest tests for scripts/task_router.py covering classify() and parse_backlog().",
+      "created_at": "2026-07-21T09:02:00Z"
+    }
+  ]
+}
